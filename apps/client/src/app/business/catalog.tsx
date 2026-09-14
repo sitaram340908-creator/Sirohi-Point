@@ -37,7 +37,7 @@ export default function BusinessCatalogScreen() {
   const offers = products.filter(product => product.b2cPriceInPaise && (product.b2bPriceInPaise ?? product.priceInPaise) < product.b2cPriceInPaise);
   const banners = (bannerQuery.data ?? []).filter(banner => banner.active);
   function clearFilters() { setSelectedCategoryIds([]); setSelectedSubcategoryIds([]); setSearch(''); setInStock(false); setSort('newest'); setPage(0); }
-  const cardWidth = width >= 1350 ? '31.8%' : desktop ? '48.5%' : width >= 780 ? '31.5%' : '47%';
+  const cardWidth = width >= 1200 ? 'calc((100% - 48px) / 4)' : width >= 900 ? 'calc((100% - 32px) / 3)' : 'calc((100% - 16px) / 2)';
 
   return <PortalShell eyebrow="THE BUSINESS STORE" title="Good supplies. Great business." copy="Everything for your next order, with wholesale prices and minimum quantities upfront." actions={<PortalButton label="Review bulk cart →" onPress={() => router.push('/business/cart')} />}>
     <View style={styles.promo}><View style={styles.promoBody}><Text style={styles.promoEyebrow}>BUY WELL. BUILD MORE.</Text><Text style={styles.promoTitle}>Your next project starts here.</Text><Text style={styles.promoCopy}>Explore materials, fittings, and everyday essentials, all in one wholesale store.</Text></View><Image source={businessCollections[5].image} resizeMode="contain" style={[styles.promoImage, width < 600 && { display: 'none' }]} /></View>

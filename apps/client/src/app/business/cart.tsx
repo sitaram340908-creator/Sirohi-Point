@@ -100,6 +100,7 @@ export default function BusinessCartScreen() {
   const styles = useBusinessStyles(createStyles);
   const { cart, clearCart, showNotice } = useAppState();
   const { token, user } = useAuth();
+  const priceVisible = user?.role === "BUSINESS" && Boolean(token);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
     null,
   );
@@ -390,7 +391,7 @@ export default function BusinessCartScreen() {
                     <View style={styles.itemBody}>
                       <Text style={styles.name}>{product.name}</Text>
                       <Text style={styles.meta}>
-                        {quantity} units · {formatMoney(unit)} per unit
+                        {quantity} units · {priceVisible ? `${formatMoney(unit)} per unit` : "Price hidden"}
                       </Text>
                       <Text style={styles.meta}>
                         MOQ {minimum} · {product.stock} available
@@ -403,9 +404,7 @@ export default function BusinessCartScreen() {
                       ) : null}
                     </View>
                     <View style={styles.itemActions}>
-                      <Text style={styles.lineTotal}>
-                        {formatMoney(unit * quantity)}
-                      </Text>
+                      {priceVisible ? <Text style={styles.lineTotal}>{formatMoney(unit * quantity)}</Text> : <PortalButton label="Reveal Price" compact onPress={() => router.push("/business/login" as never)} />}
                       <CartQuantity
                         product={product}
                         quantity={quantity}
@@ -533,7 +532,7 @@ export default function BusinessCartScreen() {
           <PortalCard
             style={styles.summaryCard}
             title="Order summary"
-            copy="Your wholesale subtotal. Final pricing and availability are confirmed when you submit."
+            copy={priceVisible ? "Your wholesale subtotal. Final pricing and availability are confirmed when you submit." : "Sign in with your business account to reveal wholesale pricing."}
           >
             <View style={styles.summaryRow}>
               <Text style={styles.meta}>Products</Text>
@@ -545,10 +544,10 @@ export default function BusinessCartScreen() {
                 {items.reduce((sum, item) => sum + item.quantity, 0)}
               </Text>
             </View>
-            <View style={styles.summaryRow}>
+            {priceVisible ? <View style={styles.summaryRow}>
               <Text style={styles.meta}>Estimated subtotal</Text>
               <Text style={styles.total}>{formatMoney(total)}</Text>
-            </View>
+            </View> : <PortalButton label="Reveal Price" onPress={() => router.push("/business/login" as never)} />}
             <View style={styles.addressLegacyHidden}>
             <View style={styles.deliveryHeader}>
               <View>
@@ -709,7 +708,7 @@ export default function BusinessCartScreen() {
             ) : null}
             <PortalButton
               disabled={submitting || savingAddress}
-              label={submitting ? "Submitting…" : "Submit for admin approval"}
+              label={submitting ? "Submitting…" : paymentMethod === "ONLINE" ? "Continue to Razorpay" : "Place order"}
               onPress={() => void submitBulkOrder()}
             />
             <PortalButton

@@ -4,11 +4,11 @@
     "slug": "sirohi-point",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/images/logo_sirohi.png",
+    "icon": "./assets/images/app-icon.png",
     "scheme": "sirohipoint",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/logo_sirohi.png",
+      "icon": "./assets/images/app-icon.png",
       "bundleIdentifier": "com.sirohipoint.app",
       "supportsTablet": true
     },
@@ -16,7 +16,7 @@
       "package": "com.sirohipoint.app",
       "adaptiveIcon": {
         "backgroundColor": "#071011",
-        "foregroundImage": "./assets/images/logo_sirohi.png"
+        "foregroundImage": "./assets/images/app-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Linking, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 
@@ -10,6 +10,8 @@ const phoneNumber = '+919058036895';
 
 export function FloatingContactActions() {
   const styles = useThemedStyles(createStyles);
+  const { width } = useWindowDimensions();
+  const mobile = width < 1100;
   const bob = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export function FloatingContactActions() {
     return () => animation.stop();
   }, [bob]);
 
-  return <View pointerEvents="box-none" style={styles.container}>
+  return <View pointerEvents="box-none" style={[styles.container, mobile ? styles.containerMobile : styles.containerDesktop]}>
     <Animated.View style={[styles.actionWrap, styles.callWrap, { transform: [{ translateY: bob }] }]}>
       <Pressable accessibilityRole="link" accessibilityLabel="Call Sirohi Point" onPress={() => void Linking.openURL(`tel:${phoneNumber}`)} style={({ pressed }) => [styles.action, styles.call, pressed && styles.pressed]}>
         <SymbolView name={{ ios: 'phone.fill', android: 'phone', web: 'phone' }} tintColor="#FFFFFF" size={27} />
@@ -30,7 +32,7 @@ export function FloatingContactActions() {
     </Animated.View>
     <Animated.View style={[styles.actionWrap, styles.whatsappWrap, { transform: [{ translateY: bob }] }]}>
       <Pressable accessibilityRole="link" accessibilityLabel="Chat with Sirohi Point on WhatsApp" onPress={() => void Linking.openURL(`https://wa.me/${phoneNumber.slice(1)}`)} style={({ pressed }) => [styles.action, styles.whatsapp, pressed && styles.pressed]}>
-        <Image accessibilityLabel="WhatsApp" source={{ uri: whatsappSvg }} contentFit="contain" style={styles.whatsappIcon} />
+        <Image accessibilityLabel="WhatsApp" source={{ uri: whatsappSvg }} contentFit="contain" tintColor="#FFFFFF" style={styles.whatsappIcon} />
       </Pressable>
       <Text style={styles.label}>WhatsApp</Text>
     </Animated.View>
@@ -38,7 +40,9 @@ export function FloatingContactActions() {
 }
 
 const createStyles = (c: { surface: string; line: string; textPrimary: string; shadow: string }) => StyleSheet.create({
-  container: { position: 'absolute', left: 0, right: 0, bottom: 88, zIndex: 200, pointerEvents: 'box-none' },
+  container: { position: 'absolute', left: 0, right: 0, zIndex: 200, pointerEvents: 'box-none' },
+  containerMobile: { bottom: 166 },
+  containerDesktop: { bottom: 88 },
   actionWrap: { position: 'absolute', alignItems: 'center', gap: 5 },
   callWrap: { left: 18 },
   whatsappWrap: { right: 18 },

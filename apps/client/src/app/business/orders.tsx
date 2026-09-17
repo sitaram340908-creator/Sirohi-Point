@@ -6,7 +6,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PortalButton, PortalCard, PortalMetric, PortalShell, StatusBadge } from '@/components/business/business-ui';
-import { downloadOrderBill, getOrders } from '@/lib/api';
+import { ReturnRequestsPanel } from '@/components/return-requests-panel';
+import { downloadOrderBill, getCustomerAddresses, getOrders, getReturnRequests } from '@/lib/api';
 import { useAppState } from '@/state/app-context';
 import { useAuth } from '@/state/auth-context';
 import { useBusinessStyles } from '@/theme/business-theme';
@@ -20,6 +21,8 @@ export default function BusinessOrdersScreen() {
   const [filter, setFilter] = useState<OrderFilter>('All orders');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const ordersQuery = useQuery({ queryKey: ['orders', user?.id], queryFn: () => getOrders(token!), enabled: user?.role === 'BUSINESS' && Boolean(token), refetchInterval: 5000 });
+  const addressesQuery = useQuery({ queryKey: ['customer-addresses', user?.id], queryFn: () => getCustomerAddresses(token!), enabled: user?.role === 'BUSINESS' && Boolean(token) });
+  const returnRequestsQuery = useQuery({ queryKey: ['return-requests', user?.id], queryFn: () => getReturnRequests(token!), enabled: user?.role === 'BUSINESS' && Boolean(token), refetchInterval: 5000 });
   const orders = ordersQuery.data ?? [];
   const pending = orders.filter(order => (order.approvalStatus ?? 'PENDING') === 'PENDING' && order.status !== 'CANCELLED');
   const delivered = orders.filter(order => order.status === 'DELIVERED');
@@ -46,6 +49,7 @@ export default function BusinessOrdersScreen() {
       {order.cancellationReason ? <Text style={styles.error}>Cancellation reason: {order.cancellationReason}</Text> : null}
       <OrderStatusTimeline status={order.status} rejected={order.approvalStatus === 'REJECTED'} />
     </PortalCard>)}</View>
+    <ReturnRequestsPanel token={token!} orders={orders} addresses={addressesQuery.data ?? []} requests={returnRequestsQuery.data ?? []} loading={returnRequestsQuery.isLoading} addressesLoading={addressesQuery.isLoading} variant="business" onChanged={() => returnRequestsQuery.refetch()} showNotice={showNotice} />
   </PortalShell>;
 }
 const statusSteps: OrderDetails['status'][] = ['CONFIRMED', 'ACCEPTED', 'PACKED', 'DISPATCHED', 'OUT_FOR_DELIVERY', 'DELIVERED'];

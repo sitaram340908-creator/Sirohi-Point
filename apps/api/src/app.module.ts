@@ -11,6 +11,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { ReturnsModule } from './returns/returns.module';
 import { ServicesModule } from './services/services.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { ServicesModule } from './services/services.module';
     AdminModule,
     ServicesModule,
     ReviewsModule,
+    ReturnsModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_FILTER, useClass: PrismaExceptionFilter }],

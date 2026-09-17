@@ -1,4 +1,4 @@
-import { paymentChannelLabel, type AdminBannerInput, type AdminBusinessDetails, type AdminProduct, type AdminProductInput, type AdminUserProfile, type Banner, type BannerAudience, type ContractorAdminDetails, type ProductCategory, type PublicUser, type OrderDetails, type HsnMaster } from '@sirohi/contracts';
+import { paymentChannelLabel, type AdminBannerInput, type AdminBusinessDetails, type AdminProduct, type AdminProductInput, type AdminUserProfile, type Banner, type BannerAudience, type ContractorAdminDetails, type ProductCategory, type PublicUser, type OrderDetails, type HsnMaster, type ReturnRequest } from '@sirohi/contracts';
 import { productCategories } from '@sirohi/contracts';
 import { radius, spacing, type ThemeColors } from '@sirohi/design-tokens';
 import { formatMoney } from '@sirohi/domain';
@@ -21,6 +21,7 @@ import {
   getAdminBusinesses,
   getAdminContractors,
   getAdminOrders,
+  getAdminReturnRequests,
   getAdminOverview,
   getAdminProducts,
   getAdminHsnMaster,
@@ -40,6 +41,7 @@ import {
   removeAdminUser,
   restoreAdminUser,
   updateAdminOrderStatus,
+  updateAdminReturnStatus,
   updateAdminBanner,
   updateAdminProduct,
   uploadAdminImage,
@@ -56,7 +58,7 @@ import { useAppTheme } from '@/theme/theme-context';
 // path below to match whatever filename you use).
 const sirohiLogo = require('./logo_sirohi.png');
 
-type AdminTab = 'overview' | 'products' | 'hsn' | 'banners' | 'users' | 'orders' | 'services' | 'technicians' | 'businesses' | 'offers';
+type AdminTab = 'overview' | 'products' | 'hsn' | 'banners' | 'users' | 'orders' | 'returns' | 'services' | 'technicians' | 'businesses' | 'offers';
 const tabs: { key: AdminTab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'offers', label: 'Service discounts' },
@@ -65,6 +67,7 @@ const tabs: { key: AdminTab; label: string }[] = [
   { key: 'banners', label: 'Home banners' },
   { key: 'users', label: 'Users' },
   { key: 'orders', label: 'Order approvals' },
+  { key: 'returns', label: 'Return requests' },
   { key: 'services', label: 'Service requests' },
   { key: 'technicians', label: 'Technician approvals' },
   { key: 'businesses', label: 'Business approvals' },
@@ -100,6 +103,7 @@ export default function AdminScreen() {
   const banners = useQuery({ queryKey: ['admin', 'banners'], queryFn: () => getAdminBanners(token!), enabled: authorised, refetchInterval: 5000 });
   const users = useQuery({ queryKey: ['admin', 'users'], queryFn: () => getAdminUsers(token!), enabled: authorised, refetchInterval: 5000 });
   const orders = useQuery({ queryKey: ['admin', 'orders'], queryFn: () => getAdminOrders(token!), enabled: authorised, refetchInterval: 5000 });
+  const returns = useQuery({ queryKey: ['admin', 'returns'], queryFn: () => getAdminReturnRequests(token!), enabled: authorised, refetchInterval: 5000 });
   const serviceBookings = useQuery({ queryKey: ['admin', 'service-bookings'], queryFn: () => getAdminServiceBookings(token!), enabled: authorised, refetchInterval: 5000 });
   const contractors = useQuery({ queryKey: ['admin', 'contractors'], queryFn: () => getAdminContractors(token!), enabled: authorised, refetchInterval: 5000 });
   const businesses = useQuery({ queryKey: ['admin', 'businesses'], queryFn: () => getAdminBusinesses(token!), enabled: authorised, refetchInterval: 5000 });
@@ -144,6 +148,7 @@ export default function AdminScreen() {
           {tab === 'banners' ? <BannersPanel token={token!} banners={banners.data ?? []} products={products.data ?? []} loading={banners.isLoading} onChanged={refresh} setMessage={setMessage} styles={styles} /> : null}
           {tab === 'users' ? <UsersPanel token={token!} users={users.data ?? []} currentUserId={user.id} loading={users.isLoading} onChanged={refresh} setMessage={setMessage} styles={styles} /> : null}
           {tab === 'orders' ? <OrdersPanel token={token!} orders={orders.data} loading={orders.isLoading} error={orders.isError} setMessage={setMessage} styles={styles} /> : null}
+          {tab === 'returns' ? <ReturnsPanel token={token!} requests={returns.data} loading={returns.isLoading} error={returns.isError} setMessage={setMessage} styles={styles} /> : null}
           {tab === 'services' ? <ServicesPanel token={token!} bookings={serviceBookings.data} loading={serviceBookings.isLoading} error={serviceBookings.isError} setMessage={setMessage} styles={styles} /> : null}
           {tab === 'technicians' ? <TechniciansPanel token={token!} contractors={contractors.data} loading={contractors.isLoading} error={contractors.isError} setMessage={setMessage} styles={styles} /> : null}
           {tab === 'businesses' ? <BusinessesPanel token={token!} businesses={businesses.data} loading={businesses.isLoading} error={businesses.isError} setMessage={setMessage} styles={styles} /> : null}
@@ -237,6 +242,41 @@ function ServicesPanel({ token, bookings: liveBookings, loading, error, setMessa
     <View style={styles.previewBanner}><Text style={styles.previewTitle}>Service approval workflow</Text><Text style={styles.previewCopy}>Customer request → admin approval → technician accepts or rejects → technician marks completed.</Text></View>
     <Editor title="Service requests" styles={styles}>{loading ? <Loading styles={styles} /> : error ? <Text style={styles.errorText}>Unable to load service requests from the backend.</Text> : bookings.length ? bookings.map((booking) => <View key={booking.id} style={styles.dataRow}><View style={styles.serviceIcon}><Text style={styles.serviceIconText}>⚒</Text></View><View style={styles.rowBody}><Text style={styles.rowTitle}>{booking.id} · {booking.serviceType}</Text><Text style={styles.rowMeta}>{booking.customer} · {booking.technician}</Text><Text style={styles.rowMeta}>{booking.area}</Text></View><View style={styles.rowActions}>{booking.status === 'PENDING_ADMIN' ? <><Action label="Approve" small onPress={() => void update(booking.id, 'APPROVED')} styles={styles} /><Action label="Reject" small danger onPress={() => void update(booking.id, 'REJECTED')} styles={styles} /></> : <Text style={[styles.stateText, booking.status === 'REJECTED' && styles.dangerText]}>{booking.status}</Text>}</View></View>) : <Text style={styles.muted}>No service requests in the database.</Text>}</Editor>
   </View>;
+}
+
+function ReturnsPanel({ token, requests: liveRequests, loading, error, setMessage, styles }: { token: string; requests?: ReturnRequest[]; loading: boolean; error: boolean; setMessage(value: string): void; styles: Styles }) {
+  const queryClient = useQueryClient();
+  const requests = liveRequests ?? [];
+
+  async function update(id: string, status: ReturnRequest['status']) {
+    try {
+      await updateAdminReturnStatus(token, id, { status });
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'returns'] });
+      setMessage(`Return request ${id} marked ${status.toLowerCase().replace(/_/g, ' ')}.`);
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : 'Unable to update the return request.');
+    }
+  }
+
+  return <View style={styles.stack}>
+    <View style={styles.previewBanner}><Text style={styles.previewTitle}>Return approval workflow</Text><Text style={styles.previewCopy}>Customer or business submits → admin reviews → pickup is scheduled → item is received → refund is completed.</Text></View>
+    <Editor title="Customer and B2B return requests" styles={styles}>{loading ? <Loading styles={styles} /> : error ? <Text style={styles.errorText}>Unable to load return requests from the backend.</Text> : requests.length ? requests.map((request) => <View key={request.id} style={styles.dataRow}><View style={styles.segmentPill}><Text style={styles.segmentText}>{request.buyerSegment}</Text></View><View style={styles.rowBody}><Text style={styles.rowTitle}>{request.id} · {request.items.map((item) => `${item.quantity} × ${item.productName}`).join(' · ')}</Text><Text style={styles.rowMeta}>{request.customerName ?? request.customerId}{request.customerEmail ? ` · ${request.customerEmail}` : ''} · Order {request.orderId}</Text><Text style={styles.rowMeta}>Pickup: {request.address}</Text><Text style={styles.rowMeta}>Submitted {new Date(request.createdAt).toLocaleDateString('en-IN')} {request.reason ? `· Reason: ${request.reason}` : ''}</Text>{request.adminNote ? <Text style={styles.rowMeta}>Admin note: {request.adminNote}</Text> : null}<Text style={[styles.stateText, (request.status === 'REJECTED' || request.status === 'CANCELLED') && styles.dangerText]}>Status: {request.status.replace(/_/g, ' ')}</Text></View><View style={styles.rowActions}>{returnActions(request.status).map((status) => <Action key={status} label={returnActionLabel(status)} small danger={status === 'REJECTED'} onPress={() => void update(request.id, status)} styles={styles} />)}</View></View>) : <Text style={styles.muted}>No return requests in the database.</Text>}</Editor>
+  </View>;
+}
+
+function returnActions(status: ReturnRequest['status']): ReturnRequest['status'][] {
+  if (status === 'PENDING') return ['APPROVED', 'REJECTED'];
+  if (status === 'APPROVED') return ['PICKUP_SCHEDULED'];
+  if (status === 'PICKUP_SCHEDULED') return ['RECEIVED'];
+  if (status === 'RECEIVED') return ['REFUNDED'];
+  return [];
+}
+
+function returnActionLabel(status: ReturnRequest['status']) {
+  if (status === 'PICKUP_SCHEDULED') return 'Schedule pickup';
+  if (status === 'RECEIVED') return 'Mark received';
+  if (status === 'REFUNDED') return 'Mark refunded';
+  return status === 'APPROVED' ? 'Approve' : 'Reject';
 }
 
 function toAdminOrderPreview(order: OrderDetails): AdminOrderPreview {

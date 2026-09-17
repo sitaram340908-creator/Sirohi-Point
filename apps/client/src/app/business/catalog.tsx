@@ -53,7 +53,7 @@ export default function BusinessCatalogScreen() {
         {liveCatalog.isLoading ? <View style={styles.grid}>{Array.from({ length: 6 }, (_, index) => <View key={index} accessibilityLabel="Loading product" style={[styles.skeleton, { width: cardWidth, flexGrow: 1 }]}><View style={styles.skeletonImage} /><View style={styles.skeletonLine} /><View style={[styles.skeletonLine, { width: '60%' }]} /></View>)}</View> : null}
         {liveCatalog.isError ? <PortalCard title="We couldn’t load your selection" copy={liveCatalog.error instanceof Error ? liveCatalog.error.message : 'Please try again.'}><PortalButton label="Try again" onPress={() => void liveCatalog.refetch()} /></PortalCard> : null}
         {!liveCatalog.isLoading && !liveCatalog.isError && !products.length ? <PortalCard title="No matching essentials just yet" copy="Try a different search or clear your filters to explore more products."><PortalButton label="Clear filters" secondary onPress={clearFilters} /></PortalCard> : null}
-        <View style={styles.grid}>{products.map(product => <BusinessProductCard key={product.id} product={product} style={{ width: cardWidth, flexGrow: 1, height: '100%' }} />)}</View>
+        <View style={styles.grid}>{products.map(product => <BusinessProductCard key={product.id} product={product} style={{ width: cardWidth, flexGrow: 1 }} />)}</View>
         <View style={styles.pagination}><PortalButton label="← Previous" secondary disabled={page === 0 || liveCatalog.isFetching} onPress={() => setPage(page - 1)} /><Text style={styles.description}>Page {page + 1}</Text><PortalButton label="Next →" secondary disabled={products.length < 24 || liveCatalog.isFetching} onPress={() => setPage(page + 1)} /></View>
       </View>
     </View>

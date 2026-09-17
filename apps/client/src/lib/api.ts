@@ -33,6 +33,9 @@ import type {
   ServiceBookingInput,
   HsnMaster,
   AdminHsnInput,
+  CreateReturnRequestInput,
+  ReturnRequest,
+  ReturnRequestStatusUpdateInput,
 } from '@sirohi/contracts';
 
 export type CatalogCategory = {
@@ -253,6 +256,14 @@ export function getOrder(token: string, id: string) {
   return request<OrderDetails>(`/orders/${encodeURIComponent(id)}`, { token });
 }
 
+export function getReturnRequests(token: string) {
+  return request<ReturnRequest[]>('/returns', { token });
+}
+
+export function createReturnRequest(token: string, input: CreateReturnRequestInput) {
+  return request<ReturnRequest>('/returns', { token, method: 'POST', body: JSON.stringify(input) });
+}
+
 export async function downloadOrderBill(token: string, id: string) {
   if (typeof document === 'undefined') throw new Error('Bill download is currently available in the web app.');
   const response = await fetch(`${requireApiBaseUrl()}/api/v1/orders/${encodeURIComponent(id)}/bill`, {
@@ -429,6 +440,14 @@ export function reapproveAdminBusiness(token: string, id: string) {
 
 export function getAdminOrders(token: string) {
   return request<OrderDetails[]>('/admin/orders', { token });
+}
+
+export function getAdminReturnRequests(token: string) {
+  return request<ReturnRequest[]>('/admin/returns', { token });
+}
+
+export function updateAdminReturnStatus(token: string, id: string, input: ReturnRequestStatusUpdateInput) {
+  return request<ReturnRequest>(`/admin/returns/${encodeURIComponent(id)}/status`, { token, method: 'PATCH', body: JSON.stringify(input) });
 }
 
 export function approveAdminOrder(token: string, id: string) {

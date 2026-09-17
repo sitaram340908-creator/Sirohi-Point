@@ -8,16 +8,17 @@ import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, T
 
 import { AppShell } from '@/components/app-shell';
 import { ProductVisual } from '@/components/product-visual';
+import { ReturnRequestsPanel } from '@/components/return-requests-panel';
 import { ScreenHeading } from '@/components/screen-heading';
 import { SessionLoading } from '@/components/session-loading';
-import { downloadOrderBill, getCatalog, getCustomerAddresses, getOrders, saveCustomerAddress, updateCustomerAddress } from '@/lib/api';
+import { downloadOrderBill, getCatalog, getCustomerAddresses, getOrders, getReturnRequests, saveCustomerAddress, updateCustomerAddress } from '@/lib/api';
 import { ADDRESS_LABEL_OPTIONS, INDIAN_STATE_OPTIONS } from '@/lib/address-options';
 import { getRoleHomePath } from '@/lib/role-navigation';
 import { useAppState, type CustomerOrder } from '@/state/app-context';
 import { useAuth } from '@/state/auth-context';
 import { useCustomerStyles as useThemedStyles } from '@/theme/customer-theme';
 
-type AccountTab = 'account' | 'orders' | 'saved' | 'addresses' | 'support';
+type AccountTab = 'account' | 'orders' | 'saved' | 'addresses' | 'support' | 'returns';
 
 const tabs: { value: AccountTab; label: string }[] = [
   { value: 'account', label: 'My account' },
@@ -25,6 +26,7 @@ const tabs: { value: AccountTab; label: string }[] = [
   { value: 'saved', label: 'Saved products' },
   { value: 'addresses', label: 'Addresses' },
   { value: 'support', label: 'Help & support' },
+  { value: 'returns', label: 'Returns & refunds' },
 ];
 
 export default function DashboardScreen() {
@@ -41,6 +43,7 @@ export default function DashboardScreen() {
   const catalog = useQuery({ queryKey: ['catalog'], queryFn: getCatalog });
   const ordersQuery = useQuery({ queryKey: ['orders', user?.id], queryFn: () => getOrders(token!), enabled: hydrated && Boolean(token) && !otherPortal, refetchInterval: 5000 });
   const addressesQuery = useQuery({ queryKey: ['customer-addresses', user?.id], queryFn: () => getCustomerAddresses(token!), enabled: hydrated && Boolean(token) && !otherPortal });
+  const returnRequestsQuery = useQuery({ queryKey: ['return-requests', user?.id], queryFn: () => getReturnRequests(token!), enabled: hydrated && Boolean(token) && !otherPortal, refetchInterval: 5000 });
   const visibleOrders = ordersQuery.data?.map(toCustomerOrder) ?? [];
   const savedProducts = (catalog.data ?? []).filter((product) => wishlist.includes(product.id));
 
@@ -120,6 +123,8 @@ export default function DashboardScreen() {
             </View>
           </View>
         ) : null}
+
+        {tab === 'returns' ? <ReturnRequestsPanel token={token!} orders={ordersQuery.data ?? []} addresses={addressesQuery.data ?? []} requests={returnRequestsQuery.data ?? []} loading={returnRequestsQuery.isLoading} addressesLoading={addressesQuery.isLoading} onChanged={() => returnRequestsQuery.refetch()} showNotice={showNotice} /> : null}
       </View>
     </AppShell>
   );

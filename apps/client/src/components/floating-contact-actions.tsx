@@ -4,7 +4,8 @@ import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 
 import { useThemedStyles } from '@/theme/theme-context';
-import { whatsappSvg } from '@/components/footer-social-links';
+
+const whatsappIcon = require('../../assets/images/whatsapp-icon.png');
 
 const phoneNumber = '+919058036895';
 
@@ -32,7 +33,7 @@ export function FloatingContactActions() {
     </Animated.View>
     <Animated.View style={[styles.actionWrap, styles.whatsappWrap, { transform: [{ translateY: bob }] }]}>
       <Pressable accessibilityRole="link" accessibilityLabel="Chat with Sirohi Point on WhatsApp" onPress={() => void Linking.openURL(`https://wa.me/${phoneNumber.slice(1)}`)} style={({ pressed }) => [styles.action, styles.whatsapp, pressed && styles.pressed]}>
-        <Image accessibilityLabel="WhatsApp" source={{ uri: whatsappSvg }} contentFit="contain" tintColor="#FFFFFF" style={styles.whatsappIcon} />
+        <Image accessibilityLabel="WhatsApp" source={whatsappIcon} contentFit="contain" style={styles.whatsappIcon} />
       </Pressable>
       <Text style={styles.label}>WhatsApp</Text>
     </Animated.View>

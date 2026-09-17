@@ -98,6 +98,16 @@ enum RfqStatus {
   CLOSED
 }
 
+enum ReturnRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PICKUP_SCHEDULED
+  RECEIVED
+  REFUNDED
+  CANCELLED
+}
+
 model User {
   id                String             @id @default(uuid()) @db.Uuid
   name              String
@@ -117,6 +127,7 @@ model User {
   businessProfile   BusinessProfile?
   rfqs              Rfq[]
   productReviews    ProductReview[]
+  returnRequests    ReturnRequest[]
 }
 
 model BusinessProfile {
@@ -332,6 +343,7 @@ model Order {
   taxInPaise      Int             @default(0)
   customer        User                @relation(fields: [customerId], references: [id])
   items           OrderItem[]
+  returnRequests  ReturnRequest[]
   booking         ServiceBooking?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -353,6 +365,8 @@ model OrderItem {
   taxInPaise          Int          @default(0)
   order               Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product             Product      @relation(fields: [productId], references: [id])
+  returnRequests      ReturnRequest[]
+  returnRequestItems   ReturnRequestItem[]
 
   @@index([orderId])
 }
@@ -412,6 +426,7 @@ model CustomerAddress {
   updatedAt      DateTime         @updatedAt
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings       ServiceBooking[]
+  returnRequests ReturnRequest[]
 
   @@index([userId, isDefault])
 }
@@ -430,6 +445,44 @@ model ServiceOffer {
   contractor      ContractorProfile? @relation(fields: [contractorId], references: [id])
   product         Product?           @relation(fields: [productId], references: [id])
   bookings        ServiceBooking[]
+}
+
+model ReturnRequest {
+  id              String              @id @default(uuid()) @db.Uuid
+  orderId         String
+  orderItemId     String              @db.Uuid
+  customerId      String              @db.Uuid
+  addressId       String              @db.Uuid
+  addressSnapshot String              @db.Text
+  quantity        Int
+  reason          String?
+  status          ReturnRequestStatus @default(PENDING)
+  adminNote       String?
+  approvedById    String?             @db.Uuid
+  approvedAt      DateTime?
+  items           ReturnRequestItem[]
+  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem           @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  customer        User                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  address         CustomerAddress     @relation(fields: [addressId], references: [id])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+  @@index([orderItemId, status])
+}
+
+model ReturnRequestItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  returnRequestId String        @db.Uuid
+  orderItemId     String        @db.Uuid
+  quantity        Int
+  returnRequest   ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([returnRequestId, orderItemId])
+  @@index([orderItemId])
 }
 
 model Rfq {

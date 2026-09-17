@@ -337,6 +337,54 @@ export const orderStatusUpdateSchema = z.object({
   status: orderStatusSchema,
 });
 
+export const returnRequestStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'PICKUP_SCHEDULED', 'RECEIVED', 'REFUNDED', 'CANCELLED'] as const;
+export type ReturnRequestStatus = (typeof returnRequestStatuses)[number];
+
+export const returnRequestItemInputSchema = z.object({
+  orderItemId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(100000),
+});
+
+export const createReturnRequestSchema = z.object({
+  orderId: z.string().min(1),
+  items: z.array(returnRequestItemInputSchema).min(1).max(100).refine((items) => new Set(items.map((item) => item.orderItemId)).size === items.length, 'Each product can appear only once in a return request'),
+  addressId: z.string().uuid(),
+  reason: z.string().trim().max(500).optional(),
+});
+export type CreateReturnRequestInput = z.infer<typeof createReturnRequestSchema>;
+
+export const returnRequestStatusUpdateSchema = z.object({
+  status: z.enum(returnRequestStatuses),
+  adminNote: z.string().trim().max(500).optional(),
+});
+export type ReturnRequestStatusUpdateInput = z.infer<typeof returnRequestStatusUpdateSchema>;
+
+export interface ReturnRequestItem {
+  id: string;
+  orderItemId: string;
+  productId: string;
+  productName: string;
+  orderedQuantity: number;
+  quantity: number;
+}
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  customerId: string;
+  customerName?: string;
+  customerEmail?: string;
+  buyerSegment: PriceSegment;
+  items: ReturnRequestItem[];
+  addressId: string;
+  address: string;
+  reason?: string;
+  status: ReturnRequestStatus;
+  adminNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BusinessProfileDetails {
   id: string;
   userId: string;

@@ -35,6 +35,7 @@ export function CustomerPromotions({ products, banners }: { products: Product[];
   const [reduceMotion, setReduceMotion] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string>();
   const lastWheelAt = useRef(0);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const slideCount = customerCollections.length;
 
   useEffect(() => {
@@ -77,12 +78,41 @@ export function CustomerPromotions({ products, banners }: { products: Product[];
     lastWheelAt.current = now;
     setActive(value => (value + (deltaY > 0 ? 1 : -1) + slideCount) % slideCount);
   }
+  function getTouchPoint(event: unknown) {
+    const nativeEvent = (event as {
+      nativeEvent?: {
+        pageX?: number;
+        pageY?: number;
+        touches?: Array<{ pageX?: number; pageY?: number }>;
+        changedTouches?: Array<{ pageX?: number; pageY?: number }>;
+      };
+    }).nativeEvent;
+    const touch = nativeEvent?.touches?.[0] || nativeEvent?.changedTouches?.[0];
+    const x = touch?.pageX ?? nativeEvent?.pageX;
+    const y = touch?.pageY ?? nativeEvent?.pageY;
+    return typeof x === 'number' && typeof y === 'number' ? { x, y } : null;
+  }
+  function handleTouchStart(event: unknown) {
+    swipeStart.current = getTouchPoint(event);
+  }
+  function handleTouchEnd(event: unknown) {
+    const start = swipeStart.current;
+    const end = getTouchPoint(event);
+    swipeStart.current = null;
+    if (!start || !end) return;
+    const deltaX = end.x - start.x;
+    const deltaY = end.y - start.y;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+    setActive(value => (value + (deltaX < 0 ? 1 : -1) + slideCount) % slideCount);
+  }
 
   return (
     <View style={styles.bannerWrap}>
       <ImageBackground
         onLayout={event => setContainerWidth(Math.round(event.nativeEvent.layout.width))}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         source={hasUploadedImage ? { uri: imageUrl } : require('../../assets/images/sirohi-ecosystem-hero.png')}
         imageStyle={styles.heroBackgroundImage}
         resizeMode="cover"

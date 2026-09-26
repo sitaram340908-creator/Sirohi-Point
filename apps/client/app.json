@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Sirohi Point",
+    "slug": "sirohi-point",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/images/app-icon.png",
+    "scheme": "sirohipoint",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/images/app-icon.png",
+      "bundleIdentifier": "com.sirohipoint.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.sirohipoint.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#071011",
+        "foregroundImage": "./assets/images/app-icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/logo_sirohi.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#071011",
+          "image": "./assets/images/logo_sirohi.png",
+          "imageWidth": 148
+        }
+      ],
+      "expo-image",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8de230cf-cefc-4ae8-a838-4bcbdad29078"
+      }
+    },
+    "owner": "shivangmeena3401"
+  }
+}

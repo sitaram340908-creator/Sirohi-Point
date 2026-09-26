@@ -1,0 +1,1 @@
+ALTER TABLE "OrderItem" ADD COLUMN "deliveryChargeInPaise" INTEGER NOT NULL DEFAULT 5000;

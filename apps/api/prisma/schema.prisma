@@ -1,0 +1,523 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlatformRole {
+  CUSTOMER
+  BUSINESS
+  VENDOR
+  CONTRACTOR
+  DISTRIBUTOR
+  SUPER_ADMIN
+  SUB_ADMIN
+}
+
+enum OrderStatus {
+  CONFIRMED
+  ACCEPTED
+  PACKED
+  DISPATCHED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BuyerSegment {
+  B2C
+  B2B
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum PaymentChannel {
+  CARD
+  UPI
+  NETBANKING
+  WALLET
+  EMI
+  OTHER
+}
+
+enum BookingStatus {
+  REQUESTED
+  MATCHED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceApprovalStatus {
+  PENDING_ADMIN
+  APPROVED
+  REJECTED
+}
+
+enum TechnicianResponse {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ContractorApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ContractorAvailability {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum BannerAudience {
+  B2C
+  B2B
+  BOTH
+}
+
+enum RfqStatus {
+  DRAFT
+  OPEN
+  QUOTED
+  AWARDED
+  CLOSED
+}
+
+enum ReturnRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PICKUP_SCHEDULED
+  RECEIVED
+  REFUNDED
+  CANCELLED
+}
+
+model User {
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String
+  phone             String?            @unique
+  customerLocation  String?
+  email             String?            @unique
+  passwordHash      String?
+  active            Boolean            @default(true)
+  role              PlatformRole       @default(CUSTOMER)
+  adminPermissions  Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  orders            Order[]
+  serviceBookings   ServiceBooking[]   @relation("CustomerBookings")
+  addresses         CustomerAddress[]
+  vendorProfile     Vendor?
+  contractorProfile ContractorProfile?
+  businessProfile   BusinessProfile?
+  rfqs              Rfq[]
+  productReviews    ProductReview[]
+  returnRequests    ReturnRequest[]
+}
+
+model BusinessProfile {
+  id              String  @id @default(uuid()) @db.Uuid
+  userId          String  @unique @db.Uuid
+  businessName    String
+  businessType    String?
+  gstin           String? @unique
+  billingAddress  String
+  shippingAddress String?
+  approvalStatus  String  @default("PENDING")
+  verified        Boolean @default(false)
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Vendor {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @unique @db.Uuid
+  storeName String
+  gstin     String?   @unique
+  verified  Boolean   @default(false)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+  quotes    Quote[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ContractorProfile {
+  id              String                   @id @default(uuid()) @db.Uuid
+  userId          String                   @unique @db.Uuid
+  skills          String[]
+  serviceRadiusKm Int                      @default(15)
+  rating          Float                    @default(0)
+  verified        Boolean                  @default(false)
+  serviceArea     String?
+  latitude        Float?
+  longitude       Float?
+  experienceYears Int?
+  bio             String?
+  approvalStatus  ContractorApprovalStatus @default(PENDING)
+  availability    ContractorAvailability   @default(OFFLINE)
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services        ContractorService[]
+  bookings        ServiceBooking[]
+  offers          ServiceOffer[]
+}
+
+model ContractorService {
+  id                 String            @id @default(uuid()) @db.Uuid
+  contractorId       String            @db.Uuid
+  serviceType        String
+  description        String?
+  visitChargeInPaise Int               @default(0)
+  priceFromInPaise   Int?
+  priceToInPaise     Int?
+  active             Boolean           @default(true)
+  contractor         ContractorProfile @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+
+  @@index([serviceType, active])
+}
+
+model Product {
+  id                    String          @id
+  vendorId              String?         @db.Uuid
+  categoryId            String          @db.Uuid
+  hsnId                 String?         @db.Uuid
+  gstRate               Float           @default(18)
+  subcategoryId         String?         @db.Uuid
+  name                  String
+  slug                  String          @unique
+  brand                 String
+  description           String
+  priceInPaise          Int
+  b2cPriceInPaise       Int
+  b2bPriceInPaise       Int?
+  deliveryChargeInPaise Int             @default(5000)
+  minimumB2BQuantity    Int             @default(1)
+  allowB2BBackorder     Boolean         @default(false)
+  codAvailable          Boolean         @default(true)
+  specifications        Json?
+  compareAtPriceInPaise Int?
+  rating                Float           @default(0)
+  reviewCount           Int             @default(0)
+  badge                 String?
+  tone                  String          @default("#58696A")
+  serviceAvailable      Boolean         @default(false)
+  imageUrl              String?         @db.Text
+  active                Boolean         @default(true)
+  vendor                Vendor?         @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  category              Category        @relation(fields: [categoryId], references: [id])
+  hsn                   HsnMaster?      @relation(fields: [hsnId], references: [id], onDelete: SetNull)
+  subcategory           Subcategory?    @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  inventory             Inventory?
+  orderItems            OrderItem[]
+  banners               Banner[]
+  serviceOffers         ServiceOffer[]
+  reviews               ProductReview[]
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([categoryId, active])
+  @@index([subcategoryId, active])
+  @@index([brand])
+  @@index([hsnId])
+}
+
+model HsnMaster {
+  id          String    @id @default(uuid()) @db.Uuid
+  code        String    @unique
+  description String
+  cgstRate    Float
+  sgstRate    Float
+  igstRate    Float
+  active      Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProductReview {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String
+  userId    String   @db.Uuid
+  rating    Int
+  title     String?
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId, createdAt])
+}
+
+model Category {
+  id            String        @id @default(uuid()) @db.Uuid
+  name          String
+  slug          String        @unique
+  sortOrder     Int           @default(0)
+  subcategories Subcategory[]
+  products      Product[]
+}
+
+model Subcategory {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  slug       String    @unique
+  categoryId String    @db.Uuid
+  sortOrder  Int       @default(0)
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   Product[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId, sortOrder])
+}
+
+model Banner {
+  id              String         @id @default(uuid()) @db.Uuid
+  title           String
+  subtitle        String?
+  badge           String?
+  imageUrl        String?        @db.Text
+  productId       String?
+  ctaLabel        String?
+  audience        BannerAudience @default(B2C)
+  backgroundColor String         @default("#0B1F33")
+  sortOrder       Int            @default(0)
+  active          Boolean        @default(true)
+  product         Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model Inventory {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @unique
+  onHand    Int      @default(0)
+  reserved  Int      @default(0)
+  available Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String              @id
+  customerId      String              @db.Uuid
+  status          OrderStatus         @default(CONFIRMED)
+  approvalStatus  OrderApprovalStatus @default(PENDING)
+  buyerSegment    BuyerSegment        @default(B2C)
+  approvedById    String?             @db.Uuid
+  approvedAt      DateTime?
+  rejectionReason String?
+  paymentMethod   PaymentMethod
+  paymentChannel  PaymentChannel?
+  paymentProvider String?
+  razorpayPaymentId String? @unique
+  billingAddress  String
+  shippingAddress String
+  shippingSameAsBilling Boolean @default(true)
+  deliveryAddress String
+  totalInPaise    Int
+  itemCount       Int
+  shopState       String?
+  customerState   String?
+  taxType         String?
+  subtotalInPaise Int             @default(0)
+  discountInPaise Int             @default(0)
+  cgstInPaise     Int             @default(0)
+  sgstInPaise     Int             @default(0)
+  igstInPaise     Int             @default(0)
+  taxInPaise      Int             @default(0)
+  invoiceNumber   String?
+  showInvoiceNumber Boolean        @default(false)
+  customer        User                @relation(fields: [customerId], references: [id])
+  items           OrderItem[]
+  returnRequests  ReturnRequest[]
+  booking         ServiceBooking?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status])
+}
+
+model OrderItem {
+  id                  String       @id @default(uuid()) @db.Uuid
+  orderId             String
+  productId           String
+  quantity            Int
+  backorderedQuantity Int          @default(0)
+  unitPriceInPaise    Int
+  buyerSegment        BuyerSegment @default(B2C)
+  hsnCode             String?
+  taxRate             Float?
+  taxInPaise          Int          @default(0)
+  deliveryChargeInPaise Int        @default(5000)
+  order               Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product             Product      @relation(fields: [productId], references: [id])
+  returnRequests      ReturnRequest[]
+  returnRequestItems   ReturnRequestItem[]
+
+  @@index([orderId])
+}
+
+model ServiceBooking {
+  id                    String                @id @default(uuid()) @db.Uuid
+  customerId            String                @db.Uuid
+  contractorId          String?               @db.Uuid
+  orderId               String?               @unique
+  serviceType           String
+  address               String
+  addressId             String?               @db.Uuid
+  scheduledFor          DateTime?
+  status                BookingStatus         @default(REQUESTED)
+  approvalStatus        ServiceApprovalStatus @default(PENDING_ADMIN)
+  technicianResponse    TechnicianResponse    @default(PENDING)
+  customerLatitude      Float?
+  customerLongitude     Float?
+  requestedPriceInPaise Int?
+  finalPriceInPaise     Int?
+  approvedById          String?               @db.Uuid
+  approvedAt            DateTime?
+  acceptedAt            DateTime?
+  rejectionReason       String?
+  notes                 String?
+  offerId               String?               @db.Uuid
+  offerTitle            String?
+  discountInPaise       Int                   @default(0)
+  offer                 ServiceOffer?         @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  customer              User                  @relation("CustomerBookings", fields: [customerId], references: [id])
+  savedAddress          CustomerAddress?      @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  contractor            ContractorProfile?    @relation(fields: [contractorId], references: [id])
+  order                 Order?                @relation(fields: [orderId], references: [id])
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([contractorId, scheduledFor])
+  @@index([status])
+}
+
+model CustomerAddress {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  label          String
+  name           String?
+  line1          String
+  houseNumber    String?
+  city           String
+  state          String?
+  postalCode     String?
+  phone          String?
+  alternatePhone String?
+  latitude       Float?
+  longitude      Float?
+  isDefault      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings       ServiceBooking[]
+  returnRequests ReturnRequest[]
+
+  @@index([userId, isDefault])
+}
+
+model ServiceOffer {
+  id              String             @id @default(uuid()) @db.Uuid
+  title           String
+  description     String             @default("")
+  discountInPaise Int
+  serviceType     String?
+  contractorId    String?            @db.Uuid
+  productId       String?
+  active          Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  contractor      ContractorProfile? @relation(fields: [contractorId], references: [id])
+  product         Product?           @relation(fields: [productId], references: [id])
+  bookings        ServiceBooking[]
+}
+
+model ReturnRequest {
+  id              String              @id
+  orderId         String
+  orderItemId     String              @db.Uuid
+  customerId      String              @db.Uuid
+  addressId       String              @db.Uuid
+  addressSnapshot String              @db.Text
+  quantity        Int
+  reason          String?
+  status          ReturnRequestStatus @default(PENDING)
+  adminNote       String?
+  approvedById    String?             @db.Uuid
+  approvedAt      DateTime?
+  items           ReturnRequestItem[]
+  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem           @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  customer        User                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  address         CustomerAddress     @relation(fields: [addressId], references: [id])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
+  @@index([orderItemId, status])
+}
+
+model ReturnRequestItem {
+  id              String        @id @default(uuid()) @db.Uuid
+  returnRequestId String
+  orderItemId     String        @db.Uuid
+  quantity        Int
+  returnRequest   ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([returnRequestId, orderItemId])
+  @@index([orderItemId])
+}
+
+model Rfq {
+  id              String    @id @default(uuid()) @db.Uuid
+  requesterId     String    @db.Uuid
+  title           String
+  requirements    Json
+  deliveryAddress String
+  status          RfqStatus @default(DRAFT)
+  requester       User      @relation(fields: [requesterId], references: [id])
+  quotes          Quote[]
+  closesAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([requesterId, status])
+}
+
+model Quote {
+  id            String   @id @default(uuid()) @db.Uuid
+  rfqId         String   @db.Uuid
+  vendorId      String   @db.Uuid
+  amountInPaise Int
+  leadTimeDays  Int
+  notes         String?
+  rfq           Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor        Vendor   @relation(fields: [vendorId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@unique([rfqId, vendorId])
+}
